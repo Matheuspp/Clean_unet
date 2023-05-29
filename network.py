@@ -80,7 +80,8 @@ class MultiHeadAttention(nn.Module):
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)
         q = q.transpose(1, 2).contiguous().view(sz_b, len_q, -1)
         q = self.dropout(self.fc(q))
-        q += residual
+        #q += residual
+        q = torch.add(q, residual)
 
         q = self.layer_norm(q)
 
@@ -103,7 +104,8 @@ class PositionwiseFeedForward(nn.Module):
 
         x = self.w_2(self.relu(self.w_1(x)))
         x = self.dropout(x)
-        x += residual
+        #x += residual
+        x = torch.add(x, residual)
 
         x = self.layer_norm(x)
 
@@ -345,13 +347,13 @@ class CleanUNet(nn.Module):
         # decoder
         for i, upsampling_block in enumerate(self.decoder):
             skip_i = skip_connections[i]
-            x += skip_i[:, :, :x.shape[-1]]
+            x = torch.add(x, skip_i[:, :, :x.shape[-1]])
             x = upsampling_block(x)
 
         x = x[:, :, :L] * std
-        x_ = x.clone().detach()
-        x_.requires_grad = True
-        return x_
+        # x_ = x.clone().detach()
+        # x.requires_grad = True
+        return x
 
 if __name__ == '__main__':
     import json
